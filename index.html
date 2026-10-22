@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pootris - The Ultimate Flush Challenge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-comic {
+      font-family: 'Fredoka One', cursive;
+    }
+    /* Retro Bathroom Tile Pattern */
+    .bathroom-tiles {
+      background-color: #0f172a;
+      background-image: 
+        radial-gradient(#1e293b 1px, transparent 1px),
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    /* Porcelain Toilet Rim Shadow & Gloss */
+    .porcelain-rim {
+      box-shadow: 
+        inset 0 0 25px rgba(0, 0, 0, 0.7),
+        0 10px 30px rgba(0, 0, 0, 0.6),
+        0 0 0 8px #cbd5e1,
+        0 0 0 14px #94a3b8;
+    }
+    /* Handle wiggle animation */
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      30% { transform: rotate(35deg); }
+      70% { transform: rotate(-10deg); }
+    }
+    .flush-wiggle {
+      animation: wiggle 0.6s ease-in-out;
+    }
+    /* Buzzing flies */
+    @keyframes flyAround {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(12px, -8px) rotate(15deg); }
+      50% { transform: translate(-8px, -15px) rotate(-10deg); }
+      75% { transform: translate(-14px, 6px) rotate(20deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    .fly-anim {
+      animation: flyAround 2s infinite ease-in-out;
+    }
+    /* Disable default touch callouts */
+    canvas, button {
+      -webkit-touch-callout: none;
+      outline: none;
+    }
+  </style>
+</head>
+<body class="bathroom-tiles text-slate-100 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 overflow-x-hidden">
+
+  <!-- Main Game Container -->
+  <div class="relative w-full max-w-4xl flex flex-col items-center">
+    
+    <!-- Header / Toilet Tank Banner -->
+    <header class="w-full max-w-lg bg-gradient-to-b from-slate-200 to-slate-300 rounded-t-3xl border-4 border-slate-400 p-3 sm:p-4 shadow-xl flex items-center justify-between relative overflow-hidden">
+      <!-- Flush Water Reservoir Details -->
+      <div class="absolute -top-6 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-400 rounded-b-xl border-2 border-slate-500"></div>
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-2">
+        <span class="text-3xl sm:text-4xl filter drop-shadow">💩</span>
+        <div>
+          <h1 class="font-comic text-2xl sm:text-3xl text-amber-950 tracking-wide drop-shadow-sm flex items-center gap-1.5">
+            POOTRIS
+            <span class="text-xs bg-amber-800 text-amber-100 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Flusher Edition</span>
+          </h1>
+          <p class="text-[10px] sm:text-xs text-slate-600 font-extrabold uppercase tracking-widest">Stack 'Em. Don't Overflow!</p>
+        </div>
+      </div>
+
+      <!-- Flush Lever & Sound Toggle -->
+      <div class="flex items-center gap-2">
+        <button id="soundBtn" class="bg-slate-700 hover:bg-slate-800 text-amber-400 font-bold p-2 sm:px-3 sm:py-2 rounded-xl border border-slate-500 shadow active:scale-95 transition-transform flex items-center text-xs gap-1" title="Toggle Sound">
+          <span id="soundIcon">🔊</span>
+          <span class="hidden sm:inline" id="soundLabel">Audio ON</span>
+        </button>
+
+        <!-- Interactive Flush Lever -->
+        <button id="flushHandle" class="group relative flex flex-col items-center focus:outline-none" title="Manual Flush!">
+          <div class="w-4 h-4 bg-slate-400 rounded-full border border-slate-500"></div>
+          <div id="handleLever" class="w-3 h-8 -mt-1 bg-gradient-to-r from-slate-300 via-white to-slate-400 rounded-full border border-slate-400 shadow origin-top transform transition duration-200"></div>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Board & Side Panels -->
+    <main class="w-full max-w-lg bg-slate-900/90 border-x-4 border-b-4 border-slate-400 rounded-b-3xl p-3 sm:p-5 shadow-2xl backdrop-blur-md flex flex-row items-start justify-center gap-3 sm:gap-6 relative">
+      
+      <!-- Stink Wave & Buzzing Flies Container -->
+      <div id="stinkContainer" class="absolute -top-10 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 transition-opacity duration-700 flex items-center gap-4 z-20">
+        <div class="fly-anim text-sm">🪰</div>
+        <div class="text-emerald-400/80 font-bold text-xs tracking-widest animate-pulse">♨ STINK HAZARD! ♨</div>
+        <div class="fly-anim text-sm" style="animation-delay: 0.7s;">🪰</div>
+      </div>
+
+      <!-- LEFT SIDE PANEL: Hold & Score -->
+      <div class="w-24 sm:w-28 flex flex-col gap-3">
+        <!-- Hold Box -->
+        <div class="bg-slate-800/90 border-2 border-slate-600 rounded-2xl p-2 flex flex-col items-center shadow-inner">
+          <span class="text-[11px] font-black uppercase text-amber-300 tracking-wider mb-1">Hold [C]</span>
+          <canvas id="holdCanvas" width="80" height="80" class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-950/60 rounded-xl border border-slate-700"></canvas>
+        </div>
+
+        <!-- Stools Stacked (Score) -->
+        <div class="bg-slate-800/90 border-2 border-slate-600 rounded-2xl p-2 text-center shadow-inner">
+          <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Stools Stacked</span>
+          <span id="scoreVal" class="font-comic text-xl sm:text-2xl text-amber-400 block tracking-tight">0</span>
+        </div>
+
+        <!-- Bowl Pressure (Level) -->
+        <div class="bg-slate-800/90 border-2 border-slate-600 rounded-2xl p-2 text-center shadow-inner">
+          <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Bowl Pressure</span>
+          <div class="flex items-center justify-center gap-1 mt-0.5">
+            <span class="text-xs">🚽</span>
+            <span id="levelVal" class="font-comic text-lg sm:text-xl text-emerald-400">1</span>
+          </div>
+        </div>
+
+        <!-- High Flush (High Score) -->
+        <div class="bg-slate-800/90 border-2 border-slate-600 rounded-2xl p-2 text-center shadow-inner">
+          <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Best Heap</span>
+          <span id="highScoreVal" class="font-comic text-sm sm:text-base text-yellow-500 block truncate">0</span>
+        </div>
+      </div>
+
+      <!-- CENTER: Toilet Bowl Playfield Canvas -->
+      <div class="relative flex flex-col items-center">
+        <!-- Porcelain Bowl Frame -->
+        <div class="porcelain-rim rounded-[2.5rem] p-2 bg-gradient-to-b from-sky-950/40 via-sky-900/20 to-sky-950/60 relative overflow-hidden">
+          <!-- Swirling water shimmer line -->
+          <div class="absolute inset-0 bg-gradient-to-b from-sky-400/10 via-transparent to-sky-500/15 pointer-events-none rounded-[2rem]"></div>
+          
+          <canvas id="tetrisCanvas" width="300" height="600" class="rounded-[1.8rem] bg-[#0c1421] shadow-2xl block relative z-10"></canvas>
+
+          <!-- Flash/Flush Overlay Animation Canvas -->
+          <canvas id="fxCanvas" width="300" height="600" class="pointer-events-none absolute inset-2 z-20 rounded-[1.8rem]"></canvas>
+
+          <!-- Start / Game Over / Pause Overlays inside bowl -->
+          <div id="modalOverlay" class="absolute inset-2 bg-slate-950/85 backdrop-blur-sm z-30 rounded-[1.8rem] flex flex-col items-center justify-center p-4 text-center">
+            <div id="modalContent" class="space-y-4">
+              <span id="modalIcon" class="text-6xl animate-bounce block">🚽</span>
+              <h2 id="modalTitle" class="font-comic text-3xl text-amber-400">READY TO FLUSH?</h2>
+              <p id="modalDesc" class="text-xs sm:text-sm text-slate-300 max-w-xs leading-relaxed">
+                Stack the squishy coils, keep the bowl unclogged, and score Quad-Flushes!
+              </p>
+              <button id="primaryBtn" class="font-comic text-lg bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-2.5 rounded-full shadow-lg border-2 border-amber-300 active:scale-95 transition-all">
+                START FLUSHING
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Status readout below bowl -->
+        <div class="flex items-center gap-2 mt-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="statusMessage" class="text-xs text-slate-400 font-bold uppercase tracking-wider">Drain Clear</span>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE PANEL: Next Pieces & Lines -->
+      <div class="w-24 sm:w-28 flex flex-col gap-3">
+        <!-- Next Queue (3 items) -->
+        <div class="bg-slate-800/90 border-2 border-slate-600 rounded-2xl p-2 flex flex-col items-center shadow-inner">
+          <span class="text-[11px] font-black uppercase text-amber-300 tracking-wider mb-1">Incoming</span>
+          <canvas id="nextCanvas" width="80" height="210" class="w-16 h-40 sm:w-20 sm:h-52 bg-slate-950/60 rounded-xl border border-slate-700"></canvas>
+        </div>
+
+        <!-- Piles Flushed (Lines Cleared) -->
+        <div class="bg-slate-800/90 border-2 border-slate-600 rounded-2xl p-2 text-center shadow-inner">
+          <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Flushed Lines</span>
+          <span id="linesVal" class="font-comic text-xl sm:text-2xl text-sky-400 block">0</span>
+        </div>
+
+        <!-- Pause / Resume Button -->
+        <button id="pauseBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-500 font-bold py-2 rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center gap-1">
+          <span id="pauseIcon">⏸️</span>
+          <span>Pause [P]</span>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- TOUCH / MOBILE VIRTUAL CONTROLLER -->
+    <div class="w-full max-w-lg mt-3 bg-slate-900/80 border-2 border-slate-700 rounded-2xl p-3 shadow-xl backdrop-blur-md">
+      <div class="grid grid-cols-6 gap-2 sm:gap-3">
+        
+        <!-- Left Button -->
+        <button id="btnLeft" class="col-span-1 py-3.5 bg-slate-800 active:bg-amber-600 rounded-xl border-2 border-slate-600 text-lg sm:text-xl font-black text-slate-200 shadow flex items-center justify-center">
+          ◀
+        </button>
+
+        <!-- Rotate Button -->
+        <button id="btnRotate" class="col-span-1 py-3.5 bg-amber-700 active:bg-amber-600 rounded-xl border-2 border-amber-500 text-lg sm:text-xl font-black text-amber-100 shadow flex items-center justify-center">
+          ↻
+        </button>
+
+        <!-- Right Button -->
+        <button id="btnRight" class="col-span-1 py-3.5 bg-slate-800 active:bg-amber-600 rounded-xl border-2 border-slate-600 text-lg sm:text-xl font-black text-slate-200 shadow flex items-center justify-center">
+          ▶
+        </button>
+
+        <!-- Soft Drop Button -->
+        <button id="btnDown" class="col-span-1 py-3.5 bg-slate-800 active:bg-amber-600 rounded-xl border-2 border-slate-600 text-lg sm:text-xl font-black text-slate-200 shadow flex items-center justify-center">
+          ▼
+        </button>
+
+        <!-- Hard Plunge Button -->
+        <button id="btnHardDrop" class="col-span-1 py-3.5 bg-emerald-700 active:bg-emerald-600 rounded-xl border-2 border-emerald-500 text-sm sm:text-base font-black text-emerald-100 shadow flex items-center justify-center" title="Hard Plunge">
+          ⚡
+        </button>
+
+        <!-- Hold Piece Button -->
+        <button id="btnHold" class="col-span-1 py-3.5 bg-sky-800 active:bg-sky-600 rounded-xl border-2 border-sky-500 text-sm sm:text-base font-black text-sky-100 shadow flex items-center justify-center" title="Hold Piece">
+          📦
+        </button>
+
+      </div>
+
+      <!-- Quick Controls Guide for Desktop -->
+      <div class="hidden sm:flex items-center justify-center gap-4 text-[11px] text-slate-400 font-semibold mt-2 pt-2 border-t border-slate-800">
+        <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300">←/→</kbd> Slide</span>
+        <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300">↑/W</kbd> Rotate</span>
+        <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300">↓/S</kbd> Soft Drop</span>
+        <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300">Space</kbd> Hard Plunge</span>
+        <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300">C</kbd> Hold</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    /* =========================================================================
+       POOTRIS - COMPLETE TETRIS GAME ENGINE WITH PROCEDURAL WEB AUDIO
+       ========================================================================= */
+
+    // --- Web Audio Synthesizer (No external asset files needed) ---
+    class ToiletAudio {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+
+      // Squishy lateral move bloop
+      playMove() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.06);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.07);
+      }
+
+      // Wet squelch rotate sound
+      playRotate() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(170, now);
+        osc.frequency.linearRampToValueAtTime(380, now + 0.09);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(600, now);
+        filter.Q.setValueAtTime(3, now);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      // Plunger "Thwump" on hard drop
+      playHardDrop() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        
+        // Deep punch
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.15);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+
+        // Suction noise burst
+        const bufferSize = this.ctx.sampleRate * 0.08;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(450, now);
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.25, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      // Wet splat when piece locks into place
+      playLock() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(130, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      // Swirling flush sound for line clears
+      playFlush(linesCleared) {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const duration = linesCleared >= 4 ? 1.4 : 0.8;
+
+        // White noise rushing water
+        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(300, now);
+        filter.frequency.exponentialRampToValueAtTime(1400, now + duration * 0.4);
+        filter.frequency.exponentialRampToValueAtTime(200, now + duration);
+        filter.Q.setValueAtTime(2, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.35, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+
+        // Chime bubbling tones
+        const baseFreq = linesCleared >= 4 ? 440 : 280;
+        [0, 0.12, 0.24, 0.36].forEach((delay, idx) => {
+          if (idx >= linesCleared) return;
+          const tone = this.ctx.createOscillator();
+          const toneGain = this.ctx.createGain();
+          tone.type = 'sine';
+          tone.frequency.setValueAtTime(baseFreq * (1 + idx * 0.25), now + delay);
+          toneGain.gain.setValueAtTime(0.12, now + delay);
+          toneGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.2);
+
+          tone.connect(toneGain);
+          toneGain.connect(this.ctx.destination);
+          tone.start(now + delay);
+          tone.stop(now + delay + 0.22);
+        });
+      }
+
+      // Plumbing gurgle / game over sad brass
+      playGameOver() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [180, 160, 140, 110];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, now + i * 0.25);
+          osc.frequency.exponentialRampToValueAtTime(f - 15, now + i * 0.25 + 0.22);
+
+          gain.gain.setValueAtTime(0.2, now + i * 0.25);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.24);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.25);
+          osc.stop(now + i * 0.25 + 0.25);
+        });
+      }
+    }
+
+    // --- GAME CONSTANTS & THEMES ---
+    const COLS = 10;
+    const ROWS = 20;
+    const BLOCK_SIZE = 30; // 300x600 canvas
+
+    // The 7 Tetromino Poop Varieties (distinctive cartoon organic tones)
+    const POOP_PALETTES = {
+      I: { main: '#451a03', light: '#78350f', shine: '#b45309', eye: true, name: 'The Big Log' },       // Deep Redwood
+      O: { main: '#713f12', light: '#a16207', shine: '#eab308', eye: true, name: 'Corn Nugget' },     // Nutty Golden
+      T: { main: '#3e2723', light: '#5d4037', shine: '#8d6e63', eye: true, name: 'Mocha Swirl' },     // Rich Mocha
+      S: { main: '#3f3a1d', light: '#656d4a', shine: '#a3b18a', eye: true, name: 'Olive Slime' },     // Olive Brown
+      Z: { main: '#5c1d11', light: '#8b2612', shine: '#d97706', eye: true, name: 'Spicy Vindaloo' },  // Red-Amber Brown
+      J: { main: '#2c1810', light: '#4a2810', shine: '#7a431d', eye: true, name: 'Chocolate Drop' },  // Dark Cocoa
+      L: { main: '#582f0e', light: '#7f4f24', shine: '#c68b59', eye: true, name: 'Caramel Curl' }     // Warm Ochre
+    };
+
+    const TETROMINOES = {
+      I: [
+        [ [0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0] ],
+        [ [0,0,1,0], [0,0,1,0], [0,0,1,0], [0,0,1,0] ],
+        [ [0,0,0,0], [0,0,0,0], [1,1,1,1], [0,0,0,0] ],
+        [ [0,1,0,0], [0,1,0,0], [0,1,0,0], [0,1,0,0] ]
+      ],
+      O: [
+        [ [1,1], [1,1] ]
+      ],
+      T: [
+        [ [0,1,0], [1,1,1], [0,0,0] ],
+        [ [0,1,0], [0,1,1], [0,1,0] ],
+        [ [0,0,0], [1,1,1], [0,1,0] ],
+        [ [0,1,0], [1,1,0], [0,1,0] ]
+      ],
+      S: [
+        [ [0,1,1], [1,1,0], [0,0,0] ],
+        [ [0,1,0], [0,1,1], [0,0,1] ],
+        [ [0,0,0], [0,1,1], [1,1,0] ],
+        [ [1,0,0], [1,1,0], [0,1,0] ]
+      ],
+      Z: [
+        [ [1,1,0], [0,1,1], [0,0,0] ],
+        [ [0,0,1], [0,1,1], [0,1,0] ],
+        [ [0,0,0], [1,1,0], [0,1,1] ],
+        [ [0,1,0], [1,1,0], [1,0,0] ]
+      ],
+      J: [
+        [ [1,0,0], [1,1,1], [0,0,0] ],
+        [ [0,1,1], [0,1,0], [0,1,0] ],
+        [ [0,0,0], [1,1,1], [0,0,1] ],
+        [ [0,1,0], [0,1,0], [1,1,0] ]
+      ],
+      L: [
+        [ [0,0,1], [1,1,1], [0,0,0] ],
+        [ [0,1,0], [0,1,0], [0,1,1] ],
+        [ [0,0,0], [1,1,1], [1,0,0] ],
+        [ [1,1,0], [0,1,0], [0,1,0] ]
+      ]
+    };
+
+    // Standard SRS wall kicks
+    const WALL_KICKS = {
+      standard: [
+        [[0,0], [-1,0], [-1,1], [0,-2], [-1,-2]], // 0->1
+        [[0,0], [1,0], [1,-1], [0,2], [1,2]],     // 1->2
+        [[0,0], [1,0], [1,1], [0,-2], [1,-2]],     // 2->3
+        [[0,0], [-1,0], [-1,-1], [0,2], [-1,2]]   // 3->0
+      ],
+      I: [
+        [[0,0], [-2,0], [1,0], [-2,-1], [1,2]],  // 0->1
+        [[0,0], [-1,0], [2,0], [-1,2], [2,-1]],   // 1->2
+        [[0,0], [2,0], [-1,0], [2,1], [-1,-2]],   // 2->3
+        [[0,0], [1,0], [-2,0], [1,-2], [-2,1]]    // 3->0
+      ]
+    };
+
+    // --- GAME ENGINE CLASS ---
+    class PootrisEngine {
+      constructor() {
+        this.audio = new ToiletAudio();
+        
+        // Canvas references
+        this.canvas = document.getElementById('tetrisCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.fxCanvas = document.getElementById('fxCanvas');
+        this.fxCtx = this.fxCanvas.getContext('2d');
+        this.holdCanvas = document.getElementById('holdCanvas');
+        this.holdCtx = this.holdCanvas.getContext('2d');
+        this.nextCanvas = document.getElementById('nextCanvas');
+        this.nextCtx = this.nextCanvas.getContext('2d');
+
+        // UI references
+        this.scoreEl = document.getElementById('scoreVal');
+        this.levelEl = document.getElementById('levelVal');
+        this.linesEl = document.getElementById('linesVal');
+        this.highScoreEl = document.getElementById('highScoreVal');
+        this.statusMsgEl = document.getElementById('statusMessage');
+        this.stinkContainer = document.getElementById('stinkContainer');
+        this.modalOverlay = document.getElementById('modalOverlay');
+        this.modalTitle = document.getElementById('modalTitle');
+        this.modalDesc = document.getElementById('modalDesc');
+        this.modalIcon = document.getElementById('modalIcon');
+        this.primaryBtn = document.getElementById('primaryBtn');
+        this.soundBtn = document.getElementById('soundBtn');
+        this.soundIcon = document.getElementById('soundIcon');
+        this.soundLabel = document.getElementById('soundLabel');
+        this.flushHandle = document.getElementById('flushHandle');
+        this.handleLever = document.getElementById('handleLever');
+        this.pauseBtn = document.getElementById('pauseBtn');
+        this.pauseIcon = document.getElementById('pauseIcon');
+
+        // Game State
+        this.grid = this.createGrid();
+        this.score = 0;
+        this.level = 1;
+        this.lines = 0;
+        this.highScore = parseInt(localStorage.getItem('pootris_highscore') || '0', 10);
+        this.highScoreEl.innerText = this.highScore.toLocaleString();
+
+        this.bag = [];
+        this.nextQueue = [];
+        this.currentPiece = null;
+        this.holdPiece = null;
+        this.canHold = true;
+
+        this.dropCounter = 0;
+        this.dropInterval = 850; // ms, decreases with level
+        this.lastTime = 0;
+        this.isPaused = false;
+        this.isGameOver = false;
+        this.hasStarted = false;
+
+        // Visual effects (particles & flush animations)
+        this.particles = [];
+        this.flushingRows = []; // { rows: [], progress: 0 }
+
+        // Bindings & Inputs
+        this.initControls();
+        this.renderQueueAndHold();
+        this.drawEmptyBoard();
+      }
+
+      createGrid() {
+        return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      }
+
+      get7Bag() {
+        const types = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+        for (let i = types.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [types[i], types[j]] = [types[j], types[i]];
+        }
+        return types;
+      }
+
+      getNextType() {
+        if (this.bag.length === 0) {
+          this.bag = this.get7Bag();
+        }
+        return this.bag.pop();
+      }
+
+      startNewGame() {
+        this.audio.init();
+        this.grid = this.createGrid();
+        this.score = 0;
+        this.level = 1;
+        this.lines = 0;
+        this.dropInterval = 850;
+        this.bag = [];
+        this.nextQueue = [];
+        this.holdPiece = null;
+        this.canHold = true;
+        this.isGameOver = false;
+        this.isPaused = false;
+        this.hasStarted = true;
+        this.particles = [];
+        this.flushingRows = [];
+
+        // Pre-fill queue
+        while (this.nextQueue.length < 3) {
+          this.nextQueue.push(this.getNextType());
+        }
+
+        this.spawnPiece();
+        this.updateStats();
+        this.hideModal();
+        this.statusMsgEl.innerText = 'Drain Clear';
+        this.statusMsgEl.className = 'text-xs text-emerald-400 font-bold uppercase tracking-wider';
+
+        this.lastTime = performance.now();
+        requestAnimationFrame((time) => this.gameLoop(time));
+      }
+
+      spawnPiece() {
+        const type = this.nextQueue.shift();
+        this.nextQueue.push(this.getNextType());
+
+        this.currentPiece = {
+          type: type,
+          matrix: TETROMINOES[type][0],
+          rotation: 0,
+          x: Math.floor(COLS / 2) - Math.ceil(TETROMINOES[type][0][0].length / 2),
+          y: 0
+        };
+
+        this.canHold = true;
+
+        // Check if spawn collides -> Game Over (Bowl Overflowed!)
+        if (this.checkCollision(this.currentPiece.x, this.currentPiece.y, this.currentPiece.matrix)) {
+          this.triggerGameOver();
+        }
+
+        this.renderQueueAndHold();
+      }
+
+      checkCollision(offsetX, offsetY, matrix) {
+        for (let r = 0; r < matrix.length; r++) {
+          for (let c = 0; c < matrix[r].length; c++) {
+            if (matrix[r][c]) {
+              const newX = offsetX + c;
+              const newY = offsetY + r;
+
+              // Boundaries
+              if (newX < 0 || newX >= COLS || newY >= ROWS) {
+                return true;
+              }
+              // Stack collision (ignore rows above board)
+              if (newY >= 0 && this.grid[newY][newX] !== 0) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }
+
+      // SRS Rotation with kicks
+      rotatePiece(dir = 1) {
+        if (!this.currentPiece) return;
+        const type = this.currentPiece.type;
+        if (type === 'O') return; // O does not rotate
+
+        const rotations = TETROMINOES[type];
+        const nextRot = (this.currentPiece.rotation + dir + rotations.length) % rotations.length;
+        const nextMatrix = rotations[nextRot];
+
+        // SRS Wall kick tests
+        const kickTable = type === 'I' ? WALL_KICKS.I : WALL_KICKS.standard;
+        const kickIndex = this.currentPiece.rotation;
+        const kicks = kickTable[kickIndex] || [[0,0]];
+
+        for (const [kx, ky] of kicks) {
+          const testX = this.currentPiece.x + kx * dir;
+          const testY = this.currentPiece.y - ky * dir;
+          if (!this.checkCollision(testX, testY, nextMatrix)) {
+            this.currentPiece.x = testX;
+            this.currentPiece.y = testY;
+            this.currentPiece.rotation = nextRot;
+            this.currentPiece.matrix = nextMatrix;
+            this.audio.playRotate();
+            this.draw();
+            return;
+          }
+        }
+      }
+
+      moveLateral(dir) {
+        if (!this.currentPiece) return;
+        if (!this.checkCollision(this.currentPiece.x + dir, this.currentPiece.y, this.currentPiece.matrix)) {
+          this.currentPiece.x += dir;
+          this.audio.playMove();
+          this.draw();
+        }
+      }
+
+      softDrop() {
+        if (!this.currentPiece) return;
+        if (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
+          this.currentPiece.y += 1;
+          this.score += 1;
+          this.scoreEl.innerText = this.score.toLocaleString();
+          this.dropCounter = 0;
+          this.draw();
+        } else {
+          this.lockPiece();
+        }
+      }
+
+      hardDrop() {
+        if (!this.currentPiece) return;
+        let dropDistance = 0;
+        while (!this.checkCollision(this.currentPiece.x, this.currentPiece.y + 1, this.currentPiece.matrix)) {
+          this.currentPiece.y += 1;
+          dropDistance++;
+        }
+        this.score += dropDistance * 2;
+        this.scoreEl.innerText = this.score.toLocaleString();
+        
+        // Spawn splat particles at landing site
+        this.createSplatParticles(this.currentPiece);
+        this.audio.playHardDrop();
+        this.lockPiece();
+      }
+
+      holdCurrentPiece() {
+        if (!this.canHold || !this.currentPiece) return;
+        this.audio.playRotate();
+        
+        const currentType = this.currentPiece.type;
+        if (this.holdPiece === null) {
+          this.holdPiece = currentType;
+          this.spawnPiece();
+        } else {
+          const temp = this.holdPiece;
+          this.holdPiece = currentType;
+          this.currentPiece = {
+            type: temp,
+            matrix: TETROMINOES[temp][0],
+            rotation: 0,
+            x: Math.floor(COLS / 2) - Math.ceil(TETROMINOES[temp][0][0].length / 2),
+            y: 0
+          };
+        }
+
+        this.canHold = false;
+        this.renderQueueAndHold();
+        this.draw();
+      }
+
+      // Calculate Ghost Piece (Plunge Projection)
+      getGhostY() {
+        if (!this.currentPiece) return 0;
+        let ghostY = this.currentPiece.y;
+        while (!this.checkCollision(this.currentPiece.x, ghostY + 1, this.currentPiece.matrix)) {
+          ghostY++;
+        }
+        return ghostY;
+      }
+
+      lockPiece() {
+        const { x, y, matrix, type } = this.currentPiece;
+        for (let r = 0; r < matrix.length; r++) {
+          for (let c = 0; c < matrix[r].length; c++) {
+            if (matrix[r][c]) {
+              const targetY = y + r;
+              const targetX = x + c;
+              if (targetY >= 0 && targetY < ROWS && targetX >= 0 && targetX < COLS) {
+                this.grid[targetY][targetX] = type;
+              }
+            }
+          }
+        }
+
+        this.audio.playLock();
+        this.clearFullLines();
+        this.checkStinkHazard();
+        this.spawnPiece();
+        this.draw();
+      }
+
+      clearFullLines() {
+        const fullRows = [];
+        for (let r = 0; r < ROWS; r++) {
+          if (this.grid[r].every(cell => cell !== 0)) {
+            fullRows.push(r);
+          }
+        }
+
+        if (fullRows.length > 0) {
+          // Trigger Flush Animation
+          this.flushingRows.push({
+            rows: fullRows,
+            progress: 0,
+            maxProgress: 24 // frames
+          });
+
+          // Animate flush lever
+          this.animateLever();
+
+          // Scoring
+          const lineMultipliers = [0, 100, 300, 500, 800];
+          const pts = (lineMultipliers[fullRows.length] || 1000) * this.level;
+          this.score += pts;
+          this.lines += fullRows.length;
+
+          // Sound
+          this.audio.playFlush(fullRows.length);
+
+          // Remove rows from grid
+          for (const row of fullRows) {
+            this.grid.splice(row, 1);
+            this.grid.unshift(Array(COLS).fill(0));
+          }
+
+          // Level up every 10 lines
+          const nextLevel = Math.floor(this.lines / 10) + 1;
+          if (nextLevel > this.level) {
+            this.level = nextLevel;
+            this.dropInterval = Math.max(120, 850 - (this.level - 1) * 75);
+            this.statusMsgEl.innerText = `BOWL PRESSURE LEVEL ${this.level}!`;
+            this.statusMsgEl.className = 'text-xs text-amber-400 font-extrabold uppercase tracking-wider animate-bounce';
+          }
+
+          this.updateStats();
+        }
+      }
+
+      checkStinkHazard() {
+        // Find highest occupied row
+        let highest = ROWS;
+        for (let r = 0; r < ROWS; r++) {
+          if (this.grid[r].some(cell => cell !== 0)) {
+            highest = r;
+            break;
+          }
+        }
+
+        const stackHeight = ROWS - highest;
+        if (stackHeight >= 11) {
+          this.stinkContainer.style.opacity = '1';
+          this.statusMsgEl.innerText = 'WARNING: BOWL NEAR OVERFLOW!';
+          this.statusMsgEl.className = 'text-xs text-rose-400 font-extrabold uppercase tracking-wider animate-pulse';
+        } else {
+          this.stinkContainer.style.opacity = '0';
+          if (this.statusMsgEl.innerText.includes('WARNING')) {
+            this.statusMsgEl.innerText = 'Drain Clear';
+            this.statusMsgEl.className = 'text-xs text-emerald-400 font-bold uppercase tracking-wider';
+          }
+        }
+      }
+
+      updateStats() {
+        this.scoreEl.innerText = this.score.toLocaleString();
+        this.levelEl.innerText = this.level;
+        this.linesEl.innerText = this.lines;
+
+        if (this.score > this.highScore) {
+          this.highScore = this.score;
+          localStorage.setItem('pootris_highscore', this.highScore.toString());
+          this.highScoreEl.innerText = this.highScore.toLocaleString();
+        }
+      }
+
+      // Splat Particles on impact
+      createSplatParticles(piece) {
+        const palette = POOP_PALETTES[piece.type];
+        const cx = (piece.x + piece.matrix[0].length / 2) * BLOCK_SIZE;
+        const cy = (piece.y + piece.matrix.length) * BLOCK_SIZE;
+
+        for (let i = 0; i < 14; i++) {
+          this.particles.push({
+            x: cx + (Math.random() - 0.5) * 40,
+            y: cy - 4,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -Math.random() * 5 - 2,
+            radius: Math.random() * 3 + 2,
+            color: Math.random() > 0.4 ? palette.main : palette.shine,
+            life: 1.0,
+            decay: Math.random() * 0.04 + 0.03
+          });
+        }
+      }
+
+      animateLever() {
+        this.handleLever.classList.add('flush-wiggle');
+        setTimeout(() => {
+          this.handleLever.classList.remove('flush-wiggle');
+        }, 650);
+      }
+
+      triggerGameOver() {
+        this.isGameOver = true;
+        this.audio.playGameOver();
+        this.showModal('BOWL OVERFLOWED!', 'The pipes backed up completely! Time for a massive plunger operation.', '💥', 'FLUSH AGAIN');
+        this.statusMsgEl.innerText = 'CLOGGED DISASTER!';
+        this.statusMsgEl.className = 'text-xs text-rose-500 font-black uppercase tracking-wider';
+      }
+
+      togglePause() {
+        if (!this.hasStarted || this.isGameOver) return;
+        this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+          this.pauseIcon.innerText = '▶️';
+          this.showModal('PAUSED', 'Take a quick bathroom break. The porcelain waits for you.', '🧻', 'RESUME');
+        } else {
+          this.pauseIcon.innerText = '⏸️';
+          this.hideModal();
+          this.lastTime = performance.now();
+          requestAnimationFrame((t) => this.gameLoop(t));
+        }
+      }
+
+      showModal(title, desc, icon, btnText) {
+        this.modalTitle.innerText = title;
+        this.modalDesc.innerText = desc;
+        this.modalIcon.innerText = icon;
+        this.primaryBtn.innerText = btnText;
+        this.modalOverlay.classList.remove('hidden');
+      }
+
+      hideModal() {
+        this.modalOverlay.classList.add('hidden');
+      }
+
+      // --- RENDERING ROUTINES ---
+      // Draw stylized poop block
+      drawPoopBlock(ctx, x, y, size, type, isGhost = false, showEyes = false) {
+        const palette = POOP_PALETTES[type] || POOP_PALETTES.I;
+        const radius = size * 0.35;
+
+        ctx.save();
+        if (isGhost) {
+          // Ghost piece styling: translucent with dashed outline
+          ctx.strokeStyle = palette.light;
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1.5;
+          ctx.fillStyle = 'rgba(69, 26, 3, 0.15)';
+          
+          ctx.beginPath();
+          ctx.roundRect(x + 2, y + 2, size - 4, size - 4, radius);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+
+        // Droplet / squishy coiled 3D poop look
+        const grad = ctx.createLinearGradient(x, y, x + size, y + size);
+        grad.addColorStop(0, palette.light);
+        grad.addColorStop(0.7, palette.main);
+        grad.addColorStop(1, '#1c0a00');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(x + 1.5, y + 1.5, size - 3, size - 3, radius);
+        ctx.fill();
+
+        // Border seam
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Top-left glossy organic shine reflection
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(x + size * 0.32, y + size * 0.3, size * 0.18, size * 0.1, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Little cute cartoon eyes on designated piece block
+        if (showEyes) {
+          const eyeY = y + size * 0.45;
+          const leftEyeX = x + size * 0.35;
+          const rightEyeX = x + size * 0.65;
+          const eyeR = size * 0.13;
+
+          // Eye whites
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(leftEyeX, eyeY, eyeR, 0, Math.PI * 2);
+          ctx.arc(rightEyeX, eyeY, eyeR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Pupils
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(leftEyeX + 1, eyeY, eyeR * 0.55, 0, Math.PI * 2);
+          ctx.arc(rightEyeX + 1, eyeY, eyeR * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Eye shine
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(leftEyeX + 1.5, eyeY - 1, eyeR * 0.25, 0, Math.PI * 2);
+          ctx.arc(rightEyeX + 1.5, eyeY - 1, eyeR * 0.25, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      draw() {
+        // Clear main board
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Grid lines (subtle drain tiles)
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        this.ctx.lineWidth = 1;
+        for (let c = 0; c <= COLS; c++) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(c * BLOCK_SIZE, 0);
+          this.ctx.lineTo(c * BLOCK_SIZE, ROWS * BLOCK_SIZE);
+          this.ctx.stroke();
+        }
+        for (let r = 0; r <= ROWS; r++) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, r * BLOCK_SIZE);
+          this.ctx.lineTo(COLS * BLOCK_SIZE, r * BLOCK_SIZE);
+          this.ctx.stroke();
+        }
+
+        // Draw settled grid blocks
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const cell = this.grid[r][c];
+            if (cell) {
+              this.drawPoopBlock(this.ctx, c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, cell, false, false);
+            }
+          }
+        }
+
+        // Draw Ghost piece
+        if (this.currentPiece && !this.isGameOver) {
+          const ghostY = this.getGhostY();
+          const { x, matrix, type } = this.currentPiece;
+          for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+              if (matrix[r][c]) {
+                this.drawPoopBlock(this.ctx, (x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, type, true, false);
+              }
+            }
+          }
+        }
+
+        // Draw Active Falling Piece
+        if (this.currentPiece && !this.isGameOver) {
+          const { x, y, matrix, type } = this.currentPiece;
+          // Find center block to place eyes
+          let eyePlaced = false;
+          for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+              if (matrix[r][c]) {
+                const placeEyes = !eyePlaced && (r === 1 || matrix.length === 2);
+                if (placeEyes) eyePlaced = true;
+                this.drawPoopBlock(this.ctx, (x + c) * BLOCK_SIZE, (y + r) * BLOCK_SIZE, BLOCK_SIZE, type, false, placeEyes);
+              }
+            }
+          }
+        }
+      }
+
+      drawEmptyBoard() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = '#0c1421';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+
+      // Draw Hold & Next piece queues
+      renderQueueAndHold() {
+        // Render Hold Piece
+        this.holdCtx.clearRect(0, 0, this.holdCanvas.width, this.holdCanvas.height);
+        if (this.holdPiece) {
+          const matrix = TETROMINOES[this.holdPiece][0];
+          const sz = 16;
+          const offsetX = (this.holdCanvas.width - matrix[0].length * sz) / 2;
+          const offsetY = (this.holdCanvas.height - matrix.length * sz) / 2;
+          for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+              if (matrix[r][c]) {
+                this.drawPoopBlock(this.holdCtx, offsetX + c * sz, offsetY + r * sz, sz, this.holdPiece, !this.canHold, false);
+              }
+            }
+          }
+        }
+
+        // Render Next Queue (up to 3)
+        this.nextCtx.clearRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
+        const sz = 16;
+        this.nextQueue.slice(0, 3).forEach((type, idx) => {
+          const matrix = TETROMINOES[type][0];
+          const offsetX = (this.nextCanvas.width - matrix[0].length * sz) / 2;
+          const offsetY = 12 + idx * 64;
+          for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+              if (matrix[r][c]) {
+                this.drawPoopBlock(this.nextCtx, offsetX + c * sz, offsetY + r * sz, sz, type, false, false);
+              }
+            }
+          }
+        });
+      }
+
+      // Render FX layer (Bubbles, Flush whirlpool, splash particles)
+      renderFX(dt) {
+        this.fxCtx.clearRect(0, 0, this.fxCanvas.width, this.fxCanvas.height);
+
+        // 1. Splat particles
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const p = this.particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35; // gravity
+          p.life -= p.decay;
+
+          if (p.life <= 0) {
+            this.particles.splice(i, 1);
+            continue;
+          }
+
+          this.fxCtx.save();
+          this.fxCtx.globalAlpha = Math.max(0, p.life);
+          this.fxCtx.fillStyle = p.color;
+          this.fxCtx.beginPath();
+          this.fxCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          this.fxCtx.fill();
+          this.fxCtx.restore();
+        }
+
+        // 2. Flush animations on clearing rows
+        for (let i = this.flushingRows.length - 1; i >= 0; i--) {
+          const flush = this.flushingRows[i];
+          flush.progress++;
+          const t = flush.progress / flush.maxProgress;
+
+          for (const row of flush.rows) {
+            const y = row * BLOCK_SIZE;
+
+            // Rushing blue soapy water wave
+            const waveX = (1 - t) * this.fxCanvas.width;
+            const grad = this.fxCtx.createLinearGradient(0, y, this.fxCanvas.width, y + BLOCK_SIZE);
+            grad.addColorStop(0, 'rgba(56, 189, 248, 0.85)');
+            grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
+            grad.addColorStop(1, 'rgba(14, 165, 233, 0.7)');
+
+            this.fxCtx.save();
+            this.fxCtx.fillStyle = grad;
+            this.fxCtx.fillRect(0, y, this.fxCanvas.width, BLOCK_SIZE);
+
+            // Water froth bubbles
+            this.fxCtx.fillStyle = '#ffffff';
+            for (let b = 0; b < 6; b++) {
+              const bx = (b * 55 + flush.progress * 12) % this.fxCanvas.width;
+              const by = y + Math.sin(flush.progress * 0.4 + b) * 8 + BLOCK_SIZE / 2;
+              this.fxCtx.beginPath();
+              this.fxCtx.arc(bx, by, Math.random() * 4 + 2, 0, Math.PI * 2);
+              this.fxCtx.fill();
+            }
+            this.fxCtx.restore();
+          }
+
+          if (flush.progress >= flush.maxProgress) {
+            this.flushingRows.splice(i, 1);
+          }
+        }
+      }
+
+      // --- MAIN GAME LOOP ---
+      gameLoop(time) {
+        if (!this.hasStarted || this.isPaused || this.isGameOver) return;
+
+        const dt = time - this.lastTime;
+        this.lastTime = time;
+
+        this.dropCounter += dt;
+        if (this.dropCounter > this.dropInterval) {
+          this.softDrop();
+          this.dropCounter = 0;
+        }
+
+        this.renderFX(dt);
+
+        requestAnimationFrame((t) => this.gameLoop(t));
+      }
+
+      // --- CONTROLS & EVENT LISTENERS ---
+      initControls() {
+        // Keyboard controls
+        window.addEventListener('keydown', (e) => {
+          if (!this.hasStarted) {
+            if (e.code === 'Enter' || e.code === 'Space') {
+              this.startNewGame();
+            }
+            return;
+          }
+
+          if (this.isGameOver) {
+            if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyR') {
+              this.startNewGame();
+            }
+            return;
+          }
+
+          switch (e.code) {
+            case 'ArrowLeft':
+            case 'KeyA':
+              e.preventDefault();
+              this.moveLateral(-1);
+              break;
+            case 'ArrowRight':
+            case 'KeyD':
+              e.preventDefault();
+              this.moveLateral(1);
+              break;
+            case 'ArrowUp':
+            case 'KeyW':
+              e.preventDefault();
+              this.rotatePiece(1);
+              break;
+            case 'ArrowDown':
+            case 'KeyS':
+              e.preventDefault();
+              this.softDrop();
+              break;
+            case 'Space':
+              e.preventDefault();
+              this.hardDrop();
+              break;
+            case 'KeyC':
+            case 'ShiftLeft':
+            case 'ShiftRight':
+              e.preventDefault();
+              this.holdCurrentPiece();
+              break;
+            case 'KeyP':
+              e.preventDefault();
+              this.togglePause();
+              break;
+            case 'KeyR':
+              e.preventDefault();
+              this.startNewGame();
+              break;
+          }
+        });
+
+        // Primary Modal Button
+        this.primaryBtn.addEventListener('click', () => {
+          if (this.isPaused) {
+            this.togglePause();
+          } else {
+            this.startNewGame();
+          }
+        });
+
+        // Sound Toggle
+        this.soundBtn.addEventListener('click', () => {
+          this.audio.init();
+          const isMuted = this.audio.toggleMute();
+          if (isMuted) {
+            this.soundIcon.innerText = '🔇';
+            this.soundLabel.innerText = 'Audio OFF';
+            this.soundBtn.classList.replace('text-amber-400', 'text-slate-400');
+          } else {
+            this.soundIcon.innerText = '🔊';
+            this.soundLabel.innerText = 'Audio ON';
+            this.soundBtn.classList.replace('text-slate-400', 'text-amber-400');
+          }
+        });
+
+        // Manual Flush Handle Click
+        this.flushHandle.addEventListener('click', () => {
+          this.audio.init();
+          this.animateLever();
+          this.audio.playFlush(2);
+          if (this.hasStarted && !this.isGameOver && !this.isPaused) {
+            // Little visual swirl
+            this.flushingRows.push({
+              rows: [ROWS - 1],
+              progress: 0,
+              maxProgress: 18
+            });
+          }
+        });
+
+        // Pause Button
+        this.pauseBtn.addEventListener('click', () => {
+          this.togglePause();
+        });
+
+        // Hold Box Click
+        this.holdCanvas.addEventListener('click', () => {
+          if (this.hasStarted && !this.isGameOver && !this.isPaused) {
+            this.holdCurrentPiece();
+          }
+        });
+
+        // Virtual Touch Controls setup with repeat on hold
+        this.bindTouchButton('btnLeft', () => this.moveLateral(-1), true);
+        this.bindTouchButton('btnRight', () => this.moveLateral(1), true);
+        this.bindTouchButton('btnDown', () => this.softDrop(), true);
+        this.bindTouchButton('btnRotate', () => this.rotatePiece(1), false);
+        this.bindTouchButton('btnHardDrop', () => this.hardDrop(), false);
+        this.bindTouchButton('btnHold', () => this.holdCurrentPiece(), false);
+      }
+
+      bindTouchButton(btnId, action, canRepeat) {
+        const btn = document.getElementById(btnId);
+        let repeatTimer = null;
+        let initialTimer = null;
+
+        const trigger = (e) => {
+          e.preventDefault();
+          this.audio.init();
+          if (!this.hasStarted || this.isGameOver || this.isPaused) return;
+          action();
+
+          if (canRepeat) {
+            initialTimer = setTimeout(() => {
+              repeatTimer = setInterval(() => {
+                action();
+              }, 60);
+            }, 180);
+          }
+        };
+
+        const stop = (e) => {
+          if (e) e.preventDefault();
+          clearTimeout(initialTimer);
+          clearInterval(repeatTimer);
+        };
+
+        btn.addEventListener('touchstart', trigger, { passive: false });
+        btn.addEventListener('touchend', stop, { passive: false });
+        btn.addEventListener('touchcancel', stop, { passive: false });
+        btn.addEventListener('mousedown', trigger);
+        btn.addEventListener('mouseup', stop);
+        btn.addEventListener('mouseleave', stop);
+      }
+    }
+
+    // Launch game when window is ready
+    window.onload = () => {
+      window.pootris = new PootrisEngine();
+    };
+  </script>
+</body>
+</html>
